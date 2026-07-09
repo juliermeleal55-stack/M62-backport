@@ -25,17 +25,11 @@ jobs:
           export CC=clang
           export CLANG_TRIPLE=aarch64-linux-gnu-
           export CROSS_COMPILE=aarch64-linux-gnu-
-          
           make mrproper
           cp arch/arm64/configs/beyond2lte.config .config
-          
-          # Desativar recursos BPF que causam erros de compilação
           sed -i 's/CONFIG_BPF=y/CONFIG_BPF=n/' .config
           sed -i 's/CONFIG_BPF_SYSCALL=y/CONFIG_BPF_SYSCALL=n/' .config
           sed -i 's/CONFIG_BPF_JIT=y/CONFIG_BPF_JIT=n/' .config
-          
-          # SELinux Permissivo
           sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
-          
           make olddefconfig
           make -j$(nproc)
