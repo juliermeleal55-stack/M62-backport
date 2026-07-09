@@ -21,9 +21,11 @@ jobs:
         run: |
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
+          # Desativa a chamada para a pasta do KernelSU no arquivo de drivers
+          sed -i '/kernelsu/d' drivers/Kconfig
           # Copia a config
           cp arch/arm64/configs/beyond2lte.config .config
-          # Remove a referência ao KernelSU que está dando erro
+          # Remove referência interna na config
           sed -i '/CONFIG_KSU/d' .config
           # Torna o SELinux permissivo
           sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
