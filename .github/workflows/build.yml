@@ -1,34 +1,41 @@
-name: Compilar Kernel
+name: Compilar Kernel Backport
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "bpf111" ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04 # Usando Ubuntu 20.04 (mais antigo e compatível)
+    runs-on: ubuntu-20.04
     steps:
       - name: Baixar código
         uses: actions/checkout@v3
+        with:
+          ref: bpf111
 
       - name: Instalar ferramentas
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential curl flex gcc-aarch64-linux-gnu libc6-dev libssl-dev libncurses5-dev python3 unzip
+          sudo apt-get install -y bc bison build-essential curl flex clang lld llvm libssl-dev libncurses5-dev python3 unzip
 
       - name: Compilar Kernel
         run: |
           export ARCH=arm64
+          export CC=clang
+          export CLANG_TRIPLE=aarch64-linux-gnu-
           export CROSS_COMPILE=aarch64-linux-gnu-
-          # Limpeza profunda
+          
           make mrproper
-          # Configuração
           cp arch/arm64/configs/beyond2lte.config .config
-          sed -i '/kernelsu/d' drivers/Kconfig
-          sed -i '/CONFIG_KSU/d' .config
-          make olddefconfig
+          
+          # Desativar recursos BPF que causam erros de compilação
+          sed -i 's/CONFIG_BPF=y/CONFIG_BPF=n/' .config
+          sed -i 's/CONFIG_BPF_SYSCALL=y/CONFIG_BPF_SYSCALL=n/' .config
+          sed -i 's/CONFIG_BPF_JIT=y/CONFIG_BPF_JIT=n/' .config
+          
           # SELinux Permissivo
           sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
-          # Compilação padrão (sem flags extras, pois o ambiente antigo deve aceitar o código original)
+          
+          make olddefconfig
           make -j$(nproc)
