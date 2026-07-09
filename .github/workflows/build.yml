@@ -21,7 +21,11 @@ jobs:
         run: |
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
+          # Copia a config
           cp arch/arm64/configs/beyond2lte.config .config
+          # Remove a referência ao KernelSU que está dando erro
+          sed -i '/CONFIG_KSU/d' .config
+          # Torna o SELinux permissivo
           sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
+          # Inicia a compilação
           make -j$(nproc)
-
