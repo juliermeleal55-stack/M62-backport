@@ -21,26 +21,12 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-            bc \
-            bison \
-            build-essential \
-            flex \
-            git \
-            libelf-dev \
-            libssl-dev \
-            libncurses-dev \
-            clang \
-            llvm \
-            lld \
-            zip \
-            unzip \
-            python3 \
-            rsync
+            bc bison build-essential flex git libelf-dev libssl-dev libncurses-dev clang llvm lld zip unzip python3 rsync
 
-      - name: Corrigir KernelSU ausente
+      - name: Adicionar KernelSU
         run: |
-          mkdir -p drivers/kernelsu
-          touch drivers/kernelsu/Kconfig
+          rm -rf drivers/kernelsu
+          git clone --depth=1 https://github.com/tiann/KernelSU drivers/kernelsu
 
       - name: Gerar configuração
         run: |
@@ -48,20 +34,27 @@ jobs:
           export SUBARCH=arm64
           make ARCH=arm64 exynos9820-m62xx_defconfig
 
-      - name: Configurar SELinux como Permissivo
+      - name: Configurar SELinux Permissivo
         run: |
-          # Garante que o SELinux não imponha restrições (Permissive)
-          sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
-          # Define o parâmetro de boot para não forçar o modo Enforcing
+          # Garante a desativação da imposição do SELinux
+          sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/g' .config
+          # Define o parâmetro de boot para permissivo
           echo "CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0" >> .config
+          # Garante que o modo enforcing não seja forçado
+          echo "CONFIG_SECURITY_SELINUX_DISABLE=n" >> .config
+
+      - name: Atualizar configuração
+        run: |
+          make ARCH=arm64 olddefconfig
 
       - name: Compilar Kernel
         run: |
-          make -j$(nproc) \
+          make -j2 \
             ARCH=arm64 \
             CC=clang \
             LLVM=1 \
-            LLVM_IAS=1
+            LLVM_IAS=1 \
+            V=1
 
       - name: Salvar Kernel
         uses: actions/upload-artifact@v4
@@ -71,3 +64,4 @@ jobs:
             arch/arm64/boot/Image
             arch/arm64/boot/Image.gz
             arch/arm64/boot/Image.gz-dtb
+            arch/arm64/boot/dtb
