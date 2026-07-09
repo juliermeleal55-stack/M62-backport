@@ -12,27 +12,48 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout
+      - name: Baixar código
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Instalar dependências
         run: |
           sudo apt update
           sudo apt install -y \
-            bc bison build-essential flex git libelf-dev libssl-dev libncurses-dev clang llvm lld zip unzip python3 rsync
+            bc \
+            bison \
+            build-essential \
+            flex \
+            git \
+            libelf-dev \
+            libssl-dev \
+            libncurses-dev \
+            clang \
+            llvm \
+            lld \
+            zip \
+            unzip \
+            python3 \
+            rsync
 
-      - name: Preparar configuração base
+      - name: Corrigir KernelSU ausente
         run: |
-          # Aplica a alteração diretamente no arquivo de configuração base
-          # Isso garante que a configuração seja lida corretamente pelo make defconfig
-          sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' arch/arm64/configs/exynos9820-m62xx_defconfig
-          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0" >> arch/arm64/configs/exynos9820-m62xx_defconfig
+          mkdir -p drivers/kernelsu
+          touch drivers/kernelsu/Kconfig
 
       - name: Gerar configuração
         run: |
           export ARCH=arm64
           export SUBARCH=arm64
-          make exynos9820-m62xx_defconfig
+          make ARCH=arm64 exynos9820-m62xx_defconfig
+
+      - name: Configurar SELinux como Permissivo
+        run: |
+          # Garante que o SELinux não imponha restrições (Permissive)
+          sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
+          # Define o parâmetro de boot para não forçar o modo Enforcing
+          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0" >> .config
 
       - name: Compilar Kernel
         run: |
@@ -42,12 +63,11 @@ jobs:
             LLVM=1 \
             LLVM_IAS=1
 
-      - name: Enviar Kernel
+      - name: Salvar Kernel
         uses: actions/upload-artifact@v4
         with:
-          name: Kernel
+          name: Kernel-build
           path: |
             arch/arm64/boot/Image
             arch/arm64/boot/Image.gz
             arch/arm64/boot/Image.gz-dtb
-            arch/arm64/boot/dtb
