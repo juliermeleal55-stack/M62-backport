@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # Usando Ubuntu 20.04 (mais antigo e compatível)
     steps:
       - name: Baixar código
         uses: actions/checkout@v3
@@ -21,6 +21,8 @@ jobs:
         run: |
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
+          # Limpeza profunda
+          make mrproper
           # Configuração
           cp arch/arm64/configs/beyond2lte.config .config
           sed -i '/kernelsu/d' drivers/Kconfig
@@ -28,7 +30,5 @@ jobs:
           make olddefconfig
           # SELinux Permissivo
           sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
-          
-          # COMPILAÇÃO FORÇADA: Ignora erros de formato (Wno-error) 
-          # e desativa a proteção de pilha que causa conflitos
-          make -j$(nproc) CFLAGS_KERNEL="-w -Wno-error" KCFLAGS="-w -Wno-error -fno-stack-protector"
+          # Compilação padrão (sem flags extras, pois o ambiente antigo deve aceitar o código original)
+          make -j$(nproc)
