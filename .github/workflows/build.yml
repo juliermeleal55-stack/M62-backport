@@ -39,4 +39,3 @@ jobs:
           
           make olddefconfig
           make -j$(nproc)
-ll 
