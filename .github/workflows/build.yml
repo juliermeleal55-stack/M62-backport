@@ -37,11 +37,6 @@ jobs:
             zip \
             rsync
 
-      - name: Configurar ambiente
-        run: |
-          export ARCH=arm64
-          export SUBARCH=arm64
-
       - name: Limpar árvore
         run: |
           make mrproper
@@ -49,6 +44,13 @@ jobs:
       - name: Gerar configuração
         run: |
           make ARCH=arm64 beyond2lte.config
+
+      - name: Aplicar SELinux Permissivo
+        run: |
+          # Desativa a imposição do SELinux no arquivo .config gerado
+          sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
+          # Garante que o SELinux não será forçado a ligar
+          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0" >> .config
 
       - name: Compilar Kernel
         run: |
