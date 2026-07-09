@@ -2,7 +2,8 @@ name: Compilar Kernel
 
 on:
   push:
-    branches: [ "principal" ]
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -20,9 +21,6 @@ jobs:
         run: |
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          # Configura para o S10+
           make beyond2lte.config
-          # Torna o SELinux permissivo
           sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
-          # Inicia a compilação
           make -j$(nproc)
