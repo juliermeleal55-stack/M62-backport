@@ -21,14 +21,12 @@ jobs:
         run: |
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          # Copia a config
+          # Limpeza e Configuração
           cp arch/arm64/configs/beyond2lte.config .config
-          # Limpa dependências de root que não existem
           sed -i '/kernelsu/d' drivers/Kconfig
           sed -i '/CONFIG_KSU/d' .config
-          # Atualiza a configuração automaticamente
           make olddefconfig
-          # Torna o SELinux permissivo
+          # SELinux Permissivo
           sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
-          # Inicia a compilação ignorando erros de aviso (warnings)
-          make -j$(nproc) KCFLAGS=-w
+          # Compilação forçada com flags de compatibilidade (sem stack protector e sem avisos)
+          make -j$(nproc) KBUILD_CFLAGS="-w -fno-stack-protector"
