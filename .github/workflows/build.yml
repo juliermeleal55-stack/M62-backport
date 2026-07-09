@@ -1,0 +1,28 @@
+name: Compilar Kernel
+
+on:
+  push:
+    branches: [ "principal" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v3
+
+      - name: Instalar ferramentas
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential curl flex gcc-aarch64-linux-gnu libc6-dev libssl-dev libncurses5-dev python3 unzip
+
+      - name: Compilar Kernel
+        run: |
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          # Configura para o S10+
+          make beyond2lte.config
+          # Torna o SELinux permissivo
+          sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
+          # Inicia a compilação
+          make -j$(nproc)
