@@ -1,35 +1,68 @@
-name: Compilar Kernel Backport
+name: Compilar Kernel
 
 on:
-  push:
-    branches: [ "bpf111" ]
   workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+      - bpf111
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Baixar código
-        uses: actions/checkout@v3
-        with:
-          ref: bpf111
+    runs-on: ubuntu-22.04
 
-      - name: Instalar ferramentas
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências
         run: |
-          sudo apt-get update
-          sudo apt-get install -y bc bison build-essential curl flex clang lld llvm libssl-dev libncurses5-dev python3 unzip
+          sudo apt update
+          sudo apt install -y \
+            bc \
+            bison \
+            build-essential \
+            cpio \
+            curl \
+            flex \
+            git \
+            libelf-dev \
+            libssl-dev \
+            lld \
+            llvm \
+            clang \
+            python3 \
+            unzip \
+            zip \
+            rsync
+
+      - name: Configurar ambiente
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+
+      - name: Limpar árvore
+        run: |
+          make mrproper
+
+      - name: Gerar configuração
+        run: |
+          make ARCH=arm64 beyond2lte.config
 
       - name: Compilar Kernel
         run: |
-          export ARCH=arm64
-          export CC=clang
-          export CLANG_TRIPLE=aarch64-linux-gnu-
-          export CROSS_COMPILE=aarch64-linux-gnu-
-          make mrproper
-          cp arch/arm64/configs/beyond2lte.config .config
-          sed -i 's/CONFIG_BPF=y/CONFIG_BPF=n/' .config
-          sed -i 's/CONFIG_BPF_SYSCALL=y/CONFIG_BPF_SYSCALL=n/' .config
-          sed -i 's/CONFIG_BPF_JIT=y/CONFIG_BPF_JIT=n/' .config
-          sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
-          make olddefconfig
-          make -j$(nproc)
+          make -j$(nproc) \
+            ARCH=arm64 \
+            CC=clang \
+            LLVM=1 \
+            LLVM_IAS=1
+
+      - name: Enviar Kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kernel
+          path: |
+            arch/arm64/boot/Image
+            arch/arm64/boot/Image.gz
+            arch/arm64/boot
