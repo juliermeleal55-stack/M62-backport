@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - master
       - bpf111
 
 jobs:
@@ -20,37 +19,20 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-            bc \
-            bison \
-            build-essential \
-            cpio \
-            curl \
-            flex \
-            git \
-            libelf-dev \
-            libssl-dev \
-            lld \
-            llvm \
-            clang \
-            python3 \
-            unzip \
-            zip \
-            rsync
+            bc bison build-essential flex git libelf-dev libssl-dev libncurses-dev clang llvm lld zip unzip python3 rsync
 
-      - name: Limpar árvore
+      - name: Preparar configuração base
         run: |
-          make mrproper
+          # Aplica a alteração diretamente no arquivo de configuração base
+          # Isso garante que a configuração seja lida corretamente pelo make defconfig
+          sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' arch/arm64/configs/exynos9820-m62xx_defconfig
+          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0" >> arch/arm64/configs/exynos9820-m62xx_defconfig
 
       - name: Gerar configuração
         run: |
-          make ARCH=arm64 beyond2lte.config
-
-      - name: Aplicar SELinux Permissivo
-        run: |
-          # Desativa a imposição do SELinux no arquivo .config gerado
-          sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
-          # Garante que o SELinux não será forçado a ligar
-          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0" >> .config
+          export ARCH=arm64
+          export SUBARCH=arm64
+          make exynos9820-m62xx_defconfig
 
       - name: Compilar Kernel
         run: |
@@ -67,4 +49,5 @@ jobs:
           path: |
             arch/arm64/boot/Image
             arch/arm64/boot/Image.gz
-            arch/arm64/boot
+            arch/arm64/boot/Image.gz-dtb
+            arch/arm64/boot/dtb
