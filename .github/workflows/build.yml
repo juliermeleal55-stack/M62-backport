@@ -21,12 +21,12 @@ jobs:
         run: |
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          # Limpeza e Configuração
+          # Configuração inicial
           cp arch/arm64/configs/beyond2lte.config .config
           sed -i '/kernelsu/d' drivers/Kconfig
           sed -i '/CONFIG_KSU/d' .config
           make olddefconfig
           # SELinux Permissivo
           sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
-          # Compilação forçada com flags de compatibilidade (sem stack protector e sem avisos)
-          make -j$(nproc) KBUILD_CFLAGS="-w -fno-stack-protector"
+          # Compilação forçada com flags de compatibilidade extrema
+          make -j$(nproc) KCFLAGS="-w -fno-stack-protector -Wno-error=incompatible-pointer-types -Wno-error=int-conversion"
