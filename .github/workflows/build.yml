@@ -21,6 +21,7 @@ jobs:
         run: |
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
-          make beyond2lte.config
+          cp arch/arm64/configs/beyond2lte.config .config
           sed -i 's/CONFIG_SECURITY_SELINUX_ENFORCE=y/CONFIG_SECURITY_SELINUX_ENFORCE=n/' .config
           make -j$(nproc)
+
